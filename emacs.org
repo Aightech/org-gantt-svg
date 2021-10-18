@@ -15,52 +15,71 @@
     (insert ":END:\n"))
   (global-set-key (kbd "C-=") 'prop_)
 
-  (defun get_all_headings (arr deep)
+   (defun get_all_headings (arr deep)
     (let ( (size (length arr)) (i 2));;get the size of the arr
       (while ( < i size );;iterate for each headings/subheadings
 	(setq name (plist-get (elt (elt arr i) 1) :title))
-	(setq time (plist-get (elt (elt arr i) 1) :scheduled))
+	(setq scheduled (plist-get (elt (elt arr i) 1) :scheduled))
+	(setq deadline (plist-get (elt (elt arr i) 1) :deadline))
 	(setq todo (plist-get (elt (elt arr i) 1) :todo-type))
 	(setq priority (plist-get (elt (elt arr i) 1) :priority))
-	;;(headline (:raw-value "Present ESA" :level 2 :priority nil :tags nil :todo-keyword #("WAIT" 0 4 (fontified t face org-todo)) :todo-type todo :post-blank 0 :footnote-section-p nil :archivedp nil :commentedp nil :post-affiliated 5003 :scheduled (timestamp (:type active-range :raw-value "<2021-09-10 Fri>--<2021-09-11 Sat>" :year-start 2021 :month-start 9 :day-start 10 :hour-start nil :minute-start nil :year-end 2021 :month-end 9 :day-end 11 :hour-end nil :minute-end nil :begin 5037 :end 5071 :post-blank 0)) :title "Present ESA" :parent #2)))
 	(setq l nil)
 	(add-to-list 'l name)
 	(add-to-list 'l deep)
 	(if priority nil (setq priority 100))
 	(add-to-list 'l priority)
+	(add-to-list 'l  "na")
 
-
-	(add-to-list 'l (elt time 1) )
-
-	(if time 
-	    (let ((tt (elt time 1)) )
+	(setq scheduled_vect nil)
+	(if scheduled 
+	    (let ((tt (elt scheduled 1)) )
 	      (add-to-list 'l t)
 	      (setq ys (plist-get tt :year-start))
 	      (setq ms (plist-get tt :month-start))
 	      (setq ds (plist-get tt :day-start))
 	      (setq hs (plist-get tt :hour-start))
-	      (setq ye (plist-get tt :year-end))
-	      (setq me (plist-get tt :month-end))
-	      (setq de (plist-get tt :day-end))
-	      (setq he (plist-get tt :hour-end))
 	      (setq ts (+ (* (- ys 2020) 8760) (* (calendar-day-number (list ms ds ys)) 24)))
-	      (setq te (+ (* (- ye 2020) 8760) (* (calendar-day-number (list me de ye)) 24)))
-	      (if (= ts te)
-		  (setq te (1+ ts))
-		nil
-		)
-	      (add-to-list 'l (vector (vector ts hs ds ms ys) (vector te he de me ye)))
+	      (setq scheduled_vect (vector ts hs ds ms ys))
+	      )
+	  )
+
+	(setq deadline_vect nil)
+	(if deadline 
+	    (let ((tt (elt deadline 1)) )
+
+	      (add-to-list 'l t)
+	      (setq ysd (plist-get tt :year-start))
+	      (setq msd (plist-get tt :month-start))
+	      (setq dsd (plist-get tt :day-start))
+	      (setq hsd (plist-get tt :hour-start))
+	      (setq tsd (+ (* (- ysd 2020) 8760) (* (calendar-day-number (list msd dsd ysd)) 24)))
+	      (setq deadline_vect (vector tsd hsd dsd msd ysd))
+	      )
+	  (if scheduled
+	      (setq deadline_vect (vector (1+ ts) hs ds ms ys))
+	    nil
+	    )
+	  )
+	(if scheduled
+	    (let ((a 1))
+	      (add-to-list 'l (vector scheduled_vect deadline_vect))
 	      (if (> minT ts)
 		  (setq minT ts)
 		nil)
-	      (if (< maxT te)
-		  (setq maxT te)
+	      (if (< maxT tsd)
+		  (setq maxT tsd)
 		nil)
 	      )
 	  (add-to-list 'l nil)
 	  )
-	(add-to-list 'ordered_arr (reverse l))
-	(get_all_headings (elt arr i) (1+ deep))
+
+	(if (< (elt (reverse l) 2) 68)
+	    (let ((a 1))
+	      (add-to-list 'ordered_arr (reverse l))
+	      (get_all_headings (elt arr i) (1+ deep))
+	      )
+	  nil
+	  )
 	(setq i (1+ i))
 	)
       )
@@ -90,16 +109,18 @@
       (let ((deep (elt (elt arr i) 1))
 	    (name (elt (elt arr i) 0))
 	    (visible (elt (elt arr i) 4)) )
+
 	(if (= deep 0)
 	    (svg-line svg 0 (+ sy (+ 2 (* i (+ Fsize 4)))) W (+ sy (+ 2 (* i (+ Fsize 4)))))
 	  nil
 	  )
+
 	(svg-text svg name :x (+ 3 (* 8 deep)) :y (+ sy (* i (+ Fsize 4))) :stroke-width 0.5 :font-size (concat (number-to-string Fsize) "px") :font-family "Helvetica")
 	(if visible
 	    (let ((ts (elt (elt (elt (elt arr i) 5) 0) 0))
 		  (te (elt (elt (elt (elt arr i) 5) 1) 0)))
-	      (svg-rectangle svg  (+ sx (* dx (/ (- ts minT) dt))) (+ (- sy Fsize) 1 (* i (+ Fsize 4)))  (* dx (/ (- te ts) dt)) (+ -2 Fsize) :fill (color-cycle i size))
 
+	      (svg-rectangle svg  (+ sx (* dx (/ (- ts minT) dt))) (+ (- sy Fsize) 1 (* i (+ Fsize 4)))  (* dx (/ (- te ts) dt)) (+ -2 Fsize) :fill (color-cycle i size))
 	      (if (< (elt (elt arr i) 2) 68 )
 		  (let ( (day  (elt (elt (elt (elt arr i) 5) 0) 2))
 			 (month  (elt (elt (elt (elt arr i) 5) 0) 3)) )
@@ -126,8 +147,8 @@
 	(erase-buffer)
 	(svg-insert-image svg));;insert the svh
       (display-buffer-in-side-window $buf `((side . bottom)
-					   (window-height . ,(+ 2 size)) ;;backquote + coma to evaluate var
-					   (slot . 0)));;display the window at the bottom
+					    (window-height . ,(+ 2 size)) ;;backquote + coma to evaluate var
+					    (slot . 0)));;display the window at the bottom
       )
     )
 
@@ -161,19 +182,19 @@
 
 * [#B] Task 1
 ** TODO [#B] subtask 1.1
-   SCHEDULED: <2021-09-14 Tue>--<2021-09-15 Wed>
+   SCHEDULED: <2021-09-14 Tue> DEADLINE: <2021-09-15 Wed>
 ** WAIT [#B] subtask 1.2
-   SCHEDULED: <2021-09-15 Wed>--<2021-09-19 Sun>
+   SCHEDULED: <2021-09-15 Wed> DEADLINE: <2021-09-19 Sun>
 ** WAIT [#B] subtask 1.3
-   SCHEDULED: <2021-09-20 Mon>--<2021-09-26 Sun>
+   SCHEDULED: <2021-09-20 Mon> DEADLINE: <2021-09-26 Sun>
 ** WAIT [#B] subtask 1.4
-   SCHEDULED: <2021-09-26 Sun>--<2021-10-02 Sat>
+   SCHEDULED: <2021-09-26 Sun> DEADLINE: <2021-10-02 Sat>
       
    
 
 * [#B] Task 2
-  SCHEDULED: <2021-08-29 Sun>--<2021-08-30 Mon>
+  SCHEDULED: <2021-08-29 Sun> DEADLINE: <2021-08-30 Mon>
   
 
 * [#B] Task 3
-  SCHEDULED: <2021-09-01 Wed>--<2021-09-07 Tue>
+  SCHEDULED: <2021-09-01 Wed> DEADLINE: <2021-09-07 Tue>
