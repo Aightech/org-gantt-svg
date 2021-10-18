@@ -15,6 +15,7 @@
     (insert ":END:\n"))
   (global-set-key (kbd "C-=") 'prop_)
 
+  
    (defun get_all_headings (arr deep)
     (let ( (size (length arr)) (i 2));;get the size of the arr
       (while ( < i size );;iterate for each headings/subheadings
@@ -38,7 +39,10 @@
 	      (setq ms (plist-get tt :month-start))
 	      (setq ds (plist-get tt :day-start))
 	      (setq hs (plist-get tt :hour-start))
-	      (setq ts (+ (* (- ys 2020) 8760) (* (calendar-day-number (list ms ds ys)) 24)))
+	      (setq mins (plist-get tt :minute-start))
+	      (unless hs (setq hs 0) )
+	      (unless mins (setq mins 0) )
+	      (setq ts (+ (* (- ys 2020) 8760) (* (calendar-day-number (list ms ds ys)) 24) hs (/ mins 60.0)))
 	      (setq scheduled_vect (vector ts hs ds ms ys))
 	      )
 	  )
@@ -52,7 +56,10 @@
 	      (setq msd (plist-get tt :month-start))
 	      (setq dsd (plist-get tt :day-start))
 	      (setq hsd (plist-get tt :hour-start))
-	      (setq tsd (+ (* (- ysd 2020) 8760) (* (calendar-day-number (list msd dsd ysd)) 24)))
+	      (setq minsd (plist-get tt :minute-start))
+	      (unless hsd (setq hsd 0) )
+	      (unless minsd (setq minsd 0) )
+	      (setq tsd (+ (* (- ysd 2020) 8760) (* (calendar-day-number (list msd dsd ysd)) 24) hsd (/ minsd 60.0)))
 	      (setq deadline_vect (vector tsd hsd dsd msd ysd))
 	      )
 	  (if scheduled
@@ -151,6 +158,7 @@
 					    (slot . 0)));;display the window at the bottom
       )
     )
+  (global-set-key (kbd "C-=") 'draw-gantt)
 
   (defun get-org-heading-info ()
     "show org-heading-components result"
@@ -182,7 +190,7 @@
 
 * [#B] Task 1
 ** TODO [#B] subtask 1.1
-   SCHEDULED: <2021-09-14 Tue> DEADLINE: <2021-09-15 Wed>
+   SCHEDULED: <2021-09-14 Tue 6:00> DEADLINE: <2021-09-15 Wed>
 ** WAIT [#B] subtask 1.2
    SCHEDULED: <2021-09-15 Wed> DEADLINE: <2021-09-19 Sun>
 ** WAIT [#B] subtask 1.3
